@@ -26,12 +26,11 @@ const CARGOS_SUPORTE = [
   '1484273613430460576'
 ];
 
-// ONLINE
 client.once('clientReady', () => {
   console.log(`🔥 Bot online como ${client.user.tag}`);
 });
 
-// COMANDO
+// COMANDO !MG
 client.on('messageCreate', async (message) => {
 
   if (message.author.bot) return;
@@ -41,21 +40,39 @@ client.on('messageCreate', async (message) => {
     const embed = new EmbedBuilder()
       .setTitle('📋 Painel de Atendimento')
       .setDescription(`
-Abra um ticket para falar com a equipe.
+🎫 **Regras Tickets** 🎫
 
-📌 Seja direto ao ponto  
-📌 Aguarde atendimento  
-📌 Evite spam  
+• **Horário de Atendimento**  
+Das 08:00 às 00:00, nossa equipe está disponível para atender suas necessidades.  
+Após esse horário, as respostas podem levar mais tempo.
+
+• **Abertura de Tickets**  
+Seja objetivo e claro.  
+Evite mensagens irrelevantes.
+
+• **Tempo de Espera**  
+Tempo máximo de espera: 1 hora.
+
+• **Análise de Provas**  
+Após análise, não serão aceitas discussões.
+
+• **Revisão de Punição**  
+Prazo: 3 horas ou menos.
       `)
-      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png')
-      .setColor(0x2b2d31);
+      .setColor('#2b2d31')
+      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png');
 
-    const botao = new ButtonBuilder()
-      .setCustomId('abrir_ticket')
-      .setLabel('Abrir Ticket')
-      .setStyle(ButtonStyle.Success);
+    const select = new StringSelectMenuBuilder()
+      .setCustomId('menu_ticket')
+      .setPlaceholder('Selecione o tipo de ticket que deseja abrir.')
+      .addOptions([
+        { label: 'Suporte', description: 'Precisa de ajuda', value: 'suporte' },
+        { label: 'Reembolso', description: 'Solicitar reembolso', value: 'reembolso' },
+        { label: 'Evento', description: 'Receber evento', value: 'evento' },
+        { label: 'Mediador', description: 'Vaga de mediador', value: 'vaga' }
+      ]);
 
-    const row = new ActionRowBuilder().addComponents(botao);
+    const row = new ActionRowBuilder().addComponents(select);
 
     message.channel.send({
       embeds: [embed],
@@ -67,39 +84,18 @@ Abra um ticket para falar com a equipe.
 // INTERAÇÕES
 client.on('interactionCreate', async (interaction) => {
 
-  // ABRIR MENU
-  if (interaction.isButton() && interaction.customId === 'abrir_ticket') {
-
-    const select = new StringSelectMenuBuilder()
-      .setCustomId('menu_ticket')
-      .setPlaceholder('Escolha o tipo de atendimento')
-      .addOptions([
-        { label: 'Suporte', value: 'suporte' },
-        { label: 'Dúvidas', value: 'duvidas' },
-        { label: 'Denúncia', value: 'denuncia' },
-        { label: 'Outros', value: 'outros' }
-      ]);
-
-    return interaction.reply({
-      content: 'Selecione o tipo de atendimento:',
-      components: [new ActionRowBuilder().addComponents(select)],
-      ephemeral: true
-    });
-  }
-
-  // CRIAR TICKET (SEM DUPLICAÇÃO)
+  // CRIAR TICKET (SEM DUPLICAR)
   if (interaction.isStringSelectMenu() && interaction.customId === 'menu_ticket') {
 
     const tipo = interaction.values[0];
 
-    // BLOQUEIA DUPLICAR
     const existente = interaction.guild.channels.cache.find(c => 
       c.name === `ticket-${interaction.user.username}`
     );
 
     if (existente) {
       return interaction.reply({
-        content: `❌ Você já possui um ticket aberto: ${existente}`,
+        content: `❌ Você já tem um ticket aberto: ${existente}`,
         ephemeral: true
       });
     }
@@ -116,12 +112,12 @@ client.on('interactionCreate', async (interaction) => {
     const embedTicket = new EmbedBuilder()
       .setTitle('🎟️ TICKET DE SUPORTE')
       .setDescription(`
-Seja bem-vindo ao seu ticket.
+Seja bem-vindo ao suporte.
 
-Aguarde um membro da equipe responder.
+Aguarde um atendente responder.
       `)
-      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png')
-      .setColor(0x2b2d31);
+      .setColor('#2b2d31')
+      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png');
 
     const assumir = new ButtonBuilder()
       .setCustomId('assumir')
@@ -130,7 +126,7 @@ Aguarde um membro da equipe responder.
 
     const sair = new ButtonBuilder()
       .setCustomId('sair')
-      .setLabel('Sair')
+      .setLabel('Sair do Ticket')
       .setStyle(ButtonStyle.Danger);
 
     const fechar = new ButtonBuilder()
@@ -187,10 +183,13 @@ Aguarde um membro da equipe responder.
     interaction.reply({ content: '🚪 Você saiu do ticket!', ephemeral: true });
   }
 
-  // FECHAR
+  // FECHAR (TODOS)
   if (interaction.isButton() && interaction.customId === 'fechar') {
 
-    interaction.reply({ content: '❌ Fechando...', ephemeral: true });
+    await interaction.reply({
+      content: '❌ Fechando ticket...',
+      ephemeral: true
+    });
 
     setTimeout(() => {
       interaction.channel.delete().catch(() => {});
