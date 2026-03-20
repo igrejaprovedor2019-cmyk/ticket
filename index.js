@@ -35,7 +35,7 @@ client.on('messageCreate', async (message) => {
 
   if (message.author.bot) return;
 
-  if (message.content === '!MG') {
+  if (message.content === '!MGL') {
 
     const embed = new EmbedBuilder()
       .setTitle('📋 Painel de Atendimento')
