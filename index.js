@@ -43,23 +43,21 @@ client.on('messageCreate', async (message) => {
 🎫 **Regras Tickets** 🎫
 
 • **Horário de Atendimento**  
-Das 08:00 às 00:00, nossa equipe está disponível para atender suas necessidades.  
-Após esse horário, as respostas podem levar mais tempo.
+Das 08:00 às 00:00, nossa equipe está disponível.
 
 • **Abertura de Tickets**  
-Seja objetivo e claro.  
-Evite mensagens irrelevantes.
+Seja direto e evite mensagens irrelevantes.
 
 • **Tempo de Espera**  
-Tempo máximo de espera: 1 hora.
+Máximo de 1 hora por resposta.
 
 • **Análise de Provas**  
-Após análise, não serão aceitas discussões.
+Sem discussões após decisão.
 
 • **Revisão de Punição**  
-Prazo: 3 horas ou menos.
+Prazo: até 3 horas.
       `)
-      .setColor('#2b2d31')
+      .setColor('#8A2BE2') // 🔥 ROXO
       .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png');
 
     const select = new StringSelectMenuBuilder()
@@ -84,18 +82,19 @@ Prazo: 3 horas ou menos.
 // INTERAÇÕES
 client.on('interactionCreate', async (interaction) => {
 
-  // CRIAR TICKET (SEM DUPLICAR)
+  // CRIAR TICKET
   if (interaction.isStringSelectMenu() && interaction.customId === 'menu_ticket') {
 
     const tipo = interaction.values[0];
 
+    // BLOQUEIA DUPLICAÇÃO
     const existente = interaction.guild.channels.cache.find(c => 
       c.name === `ticket-${interaction.user.username}`
     );
 
     if (existente) {
       return interaction.reply({
-        content: `❌ Você já tem um ticket aberto: ${existente}`,
+        content: `❌ Você já tem um ticket: ${existente}`,
         ephemeral: true
       });
     }
@@ -109,16 +108,21 @@ client.on('interactionCreate', async (interaction) => {
       ]
     });
 
+    // EMBED DO TICKET (ROXO + COM USUÁRIO)
     const embedTicket = new EmbedBuilder()
       .setTitle('🎟️ TICKET DE SUPORTE')
       .setDescription(`
+👤 **Usuário:** ${interaction.user}
+📂 **Tipo:** ${tipo}
+
 Seja bem-vindo ao suporte.
 
 Aguarde um atendente responder.
       `)
-      .setColor('#2b2d31')
+      .setColor('#8A2BE2') // 🔥 ROXO
       .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png');
 
+    // BOTÕES
     const assumir = new ButtonBuilder()
       .setCustomId('assumir')
       .setLabel('Assumir Ticket')
@@ -135,8 +139,6 @@ Aguarde um atendente responder.
       .setStyle(ButtonStyle.Danger);
 
     const row = new ActionRowBuilder().addComponents(assumir, sair, fechar);
-
-    await canal.send(`📌 ${interaction.user} abriu um ticket\n📂 Tipo: ${tipo}`);
 
     await canal.send({
       embeds: [embedTicket],
@@ -183,7 +185,7 @@ Aguarde um atendente responder.
     interaction.reply({ content: '🚪 Você saiu do ticket!', ephemeral: true });
   }
 
-  // FECHAR (TODOS)
+  // FECHAR
   if (interaction.isButton() && interaction.customId === 'fechar') {
 
     await interaction.reply({
