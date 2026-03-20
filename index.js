@@ -18,7 +18,7 @@ const client = new Client({
   ]
 });
 
-// CARGOS STAFF (assumir)
+// CARGOS STAFF
 const CARGOS_SUPORTE = [
   '1484272650795880709',
   '1484275813477122278',
@@ -26,11 +26,12 @@ const CARGOS_SUPORTE = [
   '1484273613430460576'
 ];
 
+// ONLINE
 client.once('clientReady', () => {
   console.log(`🔥 Bot online como ${client.user.tag}`);
 });
 
-// COMANDO !MG
+// COMANDO
 client.on('messageCreate', async (message) => {
 
   if (message.author.bot) return;
@@ -39,11 +40,18 @@ client.on('messageCreate', async (message) => {
 
     const embed = new EmbedBuilder()
       .setTitle('📋 Painel de Atendimento')
-      .setDescription('Clique abaixo para abrir um ticket')
+      .setDescription(`
+Abra um ticket para falar com a equipe.
+
+📌 Seja direto ao ponto  
+📌 Aguarde atendimento  
+📌 Evite spam  
+      `)
+      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png')
       .setColor(0x2b2d31);
 
     const botao = new ButtonBuilder()
-      .setCustomId('abrir_painel')
+      .setCustomId('abrir_ticket')
       .setLabel('Abrir Ticket')
       .setStyle(ButtonStyle.Success);
 
@@ -60,11 +68,11 @@ client.on('messageCreate', async (message) => {
 client.on('interactionCreate', async (interaction) => {
 
   // ABRIR MENU
-  if (interaction.isButton() && interaction.customId === 'abrir_painel') {
+  if (interaction.isButton() && interaction.customId === 'abrir_ticket') {
 
     const select = new StringSelectMenuBuilder()
-      .setCustomId('tipo_ticket')
-      .setPlaceholder('Selecione o tipo de ticket')
+      .setCustomId('menu_ticket')
+      .setPlaceholder('Escolha o tipo de atendimento')
       .addOptions([
         { label: 'Suporte', value: 'suporte' },
         { label: 'Dúvidas', value: 'duvidas' },
@@ -73,16 +81,28 @@ client.on('interactionCreate', async (interaction) => {
       ]);
 
     return interaction.reply({
-      content: 'Escolha uma opção:',
+      content: 'Selecione o tipo de atendimento:',
       components: [new ActionRowBuilder().addComponents(select)],
       ephemeral: true
     });
   }
 
-  // CRIAR TICKET (APENAS UM!)
-  if (interaction.isStringSelectMenu() && interaction.customId === 'tipo_ticket') {
+  // CRIAR TICKET (SEM DUPLICAÇÃO)
+  if (interaction.isStringSelectMenu() && interaction.customId === 'menu_ticket') {
 
     const tipo = interaction.values[0];
+
+    // BLOQUEIA DUPLICAR
+    const existente = interaction.guild.channels.cache.find(c => 
+      c.name === `ticket-${interaction.user.username}`
+    );
+
+    if (existente) {
+      return interaction.reply({
+        content: `❌ Você já possui um ticket aberto: ${existente}`,
+        ephemeral: true
+      });
+    }
 
     const canal = await interaction.guild.channels.create({
       name: `ticket-${interaction.user.username}`,
@@ -93,38 +113,32 @@ client.on('interactionCreate', async (interaction) => {
       ]
     });
 
-    // EMBED ESTILO VIDEO
     const embedTicket = new EmbedBuilder()
       .setTitle('🎟️ TICKET DE SUPORTE')
       .setDescription(`
-Seja bem-vindo ao ticket.
+Seja bem-vindo ao seu ticket.
 
 Aguarde um membro da equipe responder.
       `)
+      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png')
       .setColor(0x2b2d31);
 
-    // BOTÕES
     const assumir = new ButtonBuilder()
-      .setCustomId('assumir_ticket')
+      .setCustomId('assumir')
       .setLabel('Assumir Ticket')
       .setStyle(ButtonStyle.Success);
 
-    const staff = new ButtonBuilder()
-      .setCustomId('painel_staff')
-      .setLabel('Painel Staff')
-      .setStyle(ButtonStyle.Secondary);
-
     const sair = new ButtonBuilder()
-      .setCustomId('sair_ticket')
-      .setLabel('Sair do Ticket')
+      .setCustomId('sair')
+      .setLabel('Sair')
       .setStyle(ButtonStyle.Danger);
 
     const fechar = new ButtonBuilder()
-      .setCustomId('fechar_ticket')
+      .setCustomId('fechar')
       .setLabel('Fechar Ticket')
       .setStyle(ButtonStyle.Danger);
 
-    const row = new ActionRowBuilder().addComponents(assumir, staff, sair, fechar);
+    const row = new ActionRowBuilder().addComponents(assumir, sair, fechar);
 
     await canal.send(`📌 ${interaction.user} abriu um ticket\n📂 Tipo: ${tipo}`);
 
@@ -133,14 +147,14 @@ Aguarde um membro da equipe responder.
       components: [row]
     });
 
-    return interaction.reply({
+    interaction.reply({
       content: `✅ Ticket criado: ${canal}`,
       ephemeral: true
     });
   }
 
   // ASSUMIR
-  if (interaction.isButton() && interaction.customId === 'assumir_ticket') {
+  if (interaction.isButton() && interaction.customId === 'assumir') {
 
     const membro = interaction.member;
 
@@ -164,7 +178,7 @@ Aguarde um membro da equipe responder.
   }
 
   // SAIR
-  if (interaction.isButton() && interaction.customId === 'sair_ticket') {
+  if (interaction.isButton() && interaction.customId === 'sair') {
 
     await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
       ViewChannel: false
@@ -173,25 +187,14 @@ Aguarde um membro da equipe responder.
     interaction.reply({ content: '🚪 Você saiu do ticket!', ephemeral: true });
   }
 
-  // FECHAR (TODOS PODEM)
-  if (interaction.isButton() && interaction.customId === 'fechar_ticket') {
+  // FECHAR
+  if (interaction.isButton() && interaction.customId === 'fechar') {
 
-    await interaction.reply({
-      content: '❌ Fechando ticket...',
-      ephemeral: true
-    });
+    interaction.reply({ content: '❌ Fechando...', ephemeral: true });
 
     setTimeout(() => {
       interaction.channel.delete().catch(() => {});
     }, 2000);
-  }
-
-  // STAFF
-  if (interaction.isButton() && interaction.customId === 'painel_staff') {
-    interaction.reply({
-      content: '⚙️ Painel staff...',
-      ephemeral: true
-    });
   }
 
 });
