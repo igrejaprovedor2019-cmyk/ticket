@@ -3,8 +3,6 @@ const {
   GatewayIntentBits, 
   EmbedBuilder, 
   ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle,
   StringSelectMenuBuilder,
   ChannelType,
   PermissionsBitField
@@ -17,6 +15,9 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
+
+// 🔥 ID DO BOT QUE PODE RESPONDER
+const BOT_ATIVO = '1484260544310677645';
 
 client.once('clientReady', () => {
   console.log(`🔥 Bot online como ${client.user.tag}`);
@@ -35,30 +36,29 @@ client.on('messageCreate', async (message) => {
 🎫 **REGRAS DOS TICKETS** 🎫
 
 ⏰ **Horário de Atendimento**  
-Das **08:00 até 00:00**, nossa equipe estará disponível para te ajudar.
+Das **08:00 até 00:00**
 
 📌 **Abertura de Tickets**  
-Seja **direto e objetivo** ao abrir seu ticket.  
-Evite mensagens desnecessárias.
+Seja direto e evite mensagens desnecessárias.
 
 ⌛ **Tempo de Resposta**  
-O prazo máximo de resposta é de **1 hora**.
+Até **1 hora**
 
 ⚖️ **Análise**  
-Após a análise da equipe, **não serão aceitas discussões**.
+Sem discussões após decisão.
 
 🚨 **Revisão de Punição**  
-Prazo máximo para revisão: **3 horas**.
+Até **3 horas**
 
 ━━━━━━━━━━━━━━━━━━━━━━
 
-📩 **Escolha abaixo o tipo de atendimento**
+📩 Escolha abaixo o tipo de atendimento
       `)
       .setColor('#8A2BE2')
       .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png');
 
     const select = new StringSelectMenuBuilder()
-      .setCustomId('menu_ticket')
+      .setCustomId('menu_ticket_gbz') // 🔥 ID ÚNICO
       .setPlaceholder('📩 Selecione o tipo de ticket')
       .addOptions([
         { label: '🛠 Suporte', value: 'suporte' },
@@ -73,12 +73,14 @@ Prazo máximo para revisão: **3 horas**.
   }
 });
 
-// ÚNICO EVENTO
+// 🔥 INTERAÇÃO (TRAVADO)
 client.on('interactionCreate', async (interaction) => {
 
-  if (!interaction.isStringSelectMenu()) return;
+  // 🔒 SÓ ESSE BOT RESPONDE
+  if (interaction.client.user.id !== BOT_ATIVO) return;
 
-  if (interaction.customId !== 'menu_ticket') return;
+  if (!interaction.isStringSelectMenu()) return;
+  if (interaction.customId !== 'menu_ticket_gbz') return;
 
   const existente = interaction.guild.channels.cache.find(c => 
     c.name === `ticket-${interaction.user.id}`
@@ -86,7 +88,7 @@ client.on('interactionCreate', async (interaction) => {
 
   if (existente) {
     return interaction.reply({
-      content: `❌ Você já possui um ticket aberto: ${existente}`,
+      content: `❌ Você já possui um ticket: ${existente}`,
       ephemeral: true
     });
   }
@@ -105,9 +107,9 @@ client.on('interactionCreate', async (interaction) => {
     .setDescription(`
 👤 **Usuário:** ${interaction.user}
 
-📌 Seu atendimento foi iniciado com sucesso.
+Seu atendimento foi iniciado.
 
-⏳ Aguarde um membro da equipe responder.
+⏳ Aguarde a equipe responder.
     `)
     .setColor('#8A2BE2');
 
