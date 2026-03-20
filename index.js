@@ -18,7 +18,7 @@ const client = new Client({
   ]
 });
 
-// CARGOS STAFF
+// CARGOS STAFF (assumir)
 const CARGOS_SUPORTE = [
   '1484272650795880709',
   '1484275813477122278',
@@ -30,34 +30,16 @@ client.once('clientReady', () => {
   console.log(`🔥 Bot online como ${client.user.tag}`);
 });
 
-// COMANDO
+// COMANDO !MG
 client.on('messageCreate', async (message) => {
 
   if (message.author.bot) return;
 
   if (message.content === '!MG') {
 
-    // EMBED REGRAS
-    const regras = new EmbedBuilder()
+    const embed = new EmbedBuilder()
       .setTitle('📋 Painel de Atendimento')
-      .setDescription(`
-💎 **Regras Tickets**
-
-🕐 **Horário de Atendimento**  
-Das 08:00 às 00:00  
-
-📌 **Abertura de Tickets**  
-Seja direto e objetivo  
-
-⏳ **Tempo de Espera**  
-Pode haver demora dependendo do horário  
-
-📎 **Análise de Provas**  
-Evite discussões desnecessárias  
-
-🔁 **Revisão de Punição**  
-Respeite os prazos
-      `)
+      .setDescription('Clique abaixo para abrir um ticket')
       .setColor(0x2b2d31);
 
     const botao = new ButtonBuilder()
@@ -68,7 +50,7 @@ Respeite os prazos
     const row = new ActionRowBuilder().addComponents(botao);
 
     message.channel.send({
-      embeds: [regras],
+      embeds: [embed],
       components: [row]
     });
   }
@@ -77,7 +59,7 @@ Respeite os prazos
 // INTERAÇÕES
 client.on('interactionCreate', async (interaction) => {
 
-  // MENU
+  // ABRIR MENU
   if (interaction.isButton() && interaction.customId === 'abrir_painel') {
 
     const select = new StringSelectMenuBuilder()
@@ -85,25 +67,25 @@ client.on('interactionCreate', async (interaction) => {
       .setPlaceholder('Selecione o tipo de ticket')
       .addOptions([
         { label: 'Suporte', value: 'suporte' },
-        { label: 'Reembolso', value: 'reembolso' },
-        { label: 'Receber Evento', value: 'evento' },
-        { label: 'Vagas Mediador', value: 'vaga' }
+        { label: 'Dúvidas', value: 'duvidas' },
+        { label: 'Denúncia', value: 'denuncia' },
+        { label: 'Outros', value: 'outros' }
       ]);
 
     return interaction.reply({
-      content: 'Selecione o tipo de ticket que deseja abrir.',
+      content: 'Escolha uma opção:',
       components: [new ActionRowBuilder().addComponents(select)],
       ephemeral: true
     });
   }
 
-  // CRIAR TICKET
-  if (interaction.isStringSelectMenu()) {
+  // CRIAR TICKET (APENAS UM!)
+  if (interaction.isStringSelectMenu() && interaction.customId === 'tipo_ticket') {
 
     const tipo = interaction.values[0];
 
     const canal = await interaction.guild.channels.create({
-      name: `suporte-${interaction.user.username}`,
+      name: `ticket-${interaction.user.username}`,
       type: ChannelType.GuildText,
       permissionOverwrites: [
         { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
@@ -111,17 +93,15 @@ client.on('interactionCreate', async (interaction) => {
       ]
     });
 
-    // EMBED DO TICKET
+    // EMBED ESTILO VIDEO
     const embedTicket = new EmbedBuilder()
       .setTitle('🎟️ TICKET DE SUPORTE')
       .setDescription(`
-Seja bem-vindo(a) ao painel de controle deste ticket.  
-Em breve a equipe irá lhe atender.  
+Seja bem-vindo ao ticket.
 
-*Peço que tenha paciência.*
+Aguarde um membro da equipe responder.
       `)
-      .setColor(0x2b2d31)
-      .setThumbnail('https://media.discordapp.net/attachments/1482528899903782932/1484254280088027216/file_000000008530720eb8922a615208f883.png');
+      .setColor(0x2b2d31);
 
     // BOTÕES
     const assumir = new ButtonBuilder()
@@ -141,15 +121,12 @@ Em breve a equipe irá lhe atender.
 
     const fechar = new ButtonBuilder()
       .setCustomId('fechar_ticket')
-      .setLabel('Finalizar Ticket')
+      .setLabel('Fechar Ticket')
       .setStyle(ButtonStyle.Danger);
 
     const row = new ActionRowBuilder().addComponents(assumir, staff, sair, fechar);
 
-    await canal.send(`
-📌 Ticket iniciado por ${interaction.user}
-📂 Tipo: ${tipo}
-    `);
+    await canal.send(`📌 ${interaction.user} abriu um ticket\n📂 Tipo: ${tipo}`);
 
     await canal.send({
       embeds: [embedTicket],
@@ -163,7 +140,7 @@ Em breve a equipe irá lhe atender.
   }
 
   // ASSUMIR
-  if (interaction.customId === 'assumir_ticket') {
+  if (interaction.isButton() && interaction.customId === 'assumir_ticket') {
 
     const membro = interaction.member;
 
@@ -187,17 +164,22 @@ Em breve a equipe irá lhe atender.
   }
 
   // SAIR
-  if (interaction.customId === 'sair_ticket') {
+  if (interaction.isButton() && interaction.customId === 'sair_ticket') {
+
     await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
       ViewChannel: false
     });
 
-    interaction.reply({ content: '🚪 Você saiu!', ephemeral: true });
+    interaction.reply({ content: '🚪 Você saiu do ticket!', ephemeral: true });
   }
 
-  // FECHAR
-  if (interaction.customId === 'fechar_ticket') {
-    interaction.reply({ content: '❌ Fechando...', ephemeral: true });
+  // FECHAR (TODOS PODEM)
+  if (interaction.isButton() && interaction.customId === 'fechar_ticket') {
+
+    await interaction.reply({
+      content: '❌ Fechando ticket...',
+      ephemeral: true
+    });
 
     setTimeout(() => {
       interaction.channel.delete().catch(() => {});
@@ -205,8 +187,11 @@ Em breve a equipe irá lhe atender.
   }
 
   // STAFF
-  if (interaction.customId === 'painel_staff') {
-    interaction.reply({ content: '⚙️ Painel staff...', ephemeral: true });
+  if (interaction.isButton() && interaction.customId === 'painel_staff') {
+    interaction.reply({
+      content: '⚙️ Painel staff...',
+      ephemeral: true
+    });
   }
 
 });
