@@ -64,10 +64,10 @@ Prazo: até 3 horas.
       .setCustomId('menu_ticket')
       .setPlaceholder('Selecione o tipo de ticket que deseja abrir.')
       .addOptions([
-        { label: 'Suporte', description: 'Precisa de ajuda', value: 'suporte' },
-        { label: 'Reembolso', description: 'Solicitar reembolso', value: 'reembolso' },
-        { label: 'Evento', description: 'Receber evento', value: 'evento' },
-        { label: 'Mediador', description: 'Vaga de mediador', value: 'vaga' }
+        { label: '🛠Suporte', description: 'Precisa de ajuda', value: 'suporte' },
+        { label: '⇄Reembolso', description: 'Solicitar reembolso', value: 'reembolso' },
+        { label: '📰Evento', description: 'Receber evento', value: 'evento' },
+        { label: '⚜Mediador', description: 'Vaga de mediador', value: 'vaga' }
       ]);
 
     const row = new ActionRowBuilder().addComponents(select);
