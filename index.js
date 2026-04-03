@@ -11,22 +11,32 @@ const {
 } = require('discord.js');
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 const TOKEN = process.env.TOKEN;
+const PREFIX = '!';
 
 client.once(Events.ClientReady, () => {
   console.log(`✅ Online como ${client.user.tag}`);
 });
 
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+// =========================
+// 💬 COMANDO !painel
+// =========================
+client.on(Events.MessageCreate, async message => {
+  if (!message.guild) return;
+  if (message.author.bot) return;
 
-  if (interaction.commandName === '!criar') {
-    await interaction.reply({ content: '🚀 obrigado por compra o produto...', ephemeral: true });
+  if (message.content === `${PREFIX}painel`) {
 
-    const guild = interaction.guild;
+    await message.reply('🚀 Criando servidor completo...');
+
+    const guild = message.guild;
 
     // =====================
     // 🎭 CARGOS
@@ -34,19 +44,20 @@ client.on(Events.InteractionCreate, async interaction => {
     const cargos = {};
 
     async function criarCargo(nome, cor) {
-      const cargo = await guild.roles.create({ name: nome, color: cor });
+      const cargo = await guild.roles.create({
+        name: nome,
+        color: cor
+      });
       cargos[nome] = cargo;
       return cargo;
     }
 
-    // Staff
     await criarCargo('👑 DONO', 'Gold');
     await criarCargo('👑 SUB DONO', 'Yellow');
     await criarCargo('GERENTE', 'Orange');
     await criarCargo('ΔSTAFF', 'Red');
     await criarCargo('[🛠️ SUPORTE 🛠️]', 'Blue');
 
-    // Clientes
     await criarCargo('💠 MEMBRO', 'Grey');
     await criarCargo('🖥️ CLIENTE APK MOD', 'Blue');
     await criarCargo('🖥️ CLIENTE PAINEL IOS', 'Purple');
@@ -58,12 +69,12 @@ client.on(Events.InteractionCreate, async interaction => {
     const verificado = await criarCargo('✔️ VERIFICADO', 'Green');
 
     // =====================
-    // 🔒 PERMISSÃO BASE
+    // 🔒 BLOQUEAR SERVIDOR
     // =====================
     await guild.roles.everyone.setPermissions([]);
 
     // =====================
-    // ✅ CANAL VERIFICAÇÃO
+    // ✅ VERIFICAÇÃO
     // =====================
     const canalVerificacao = await guild.channels.create({
       name: '✅・verificação',
@@ -93,7 +104,7 @@ client.on(Events.InteractionCreate, async interaction => {
     });
 
     // =====================
-    // 📥 CATEGORIA DOWNLOAD
+    // 📥 DOWNLOADS
     // =====================
     const downloads = await guild.channels.create({
       name: '📥・downloads',
@@ -111,10 +122,6 @@ client.on(Events.InteractionCreate, async interaction => {
             deny: [PermissionsBitField.Flags.ViewChannel]
           },
           {
-            id: verificado.id,
-            deny: [PermissionsBitField.Flags.ViewChannel]
-          },
-          {
             id: cargo.id,
             allow: [PermissionsBitField.Flags.ViewChannel]
           }
@@ -122,15 +129,15 @@ client.on(Events.InteractionCreate, async interaction => {
       });
     }
 
-    await criarCanalPrivado('✅・download-android', cargos['🖥️ CLIENTE APK MOD']);
-    await criarCanalPrivado('✅・download-ios', cargos['🖥️ CLIENTE PAINEL IOS']);
-    await criarCanalPrivado('✅・download-wifi', cargos['🖥️ CLIENTE HS WIFI']);
-    await criarCanalPrivado('✅・download-holograma', cargos['🖥️ CLIENTE HOLOGRAMA']);
-    await criarCanalPrivado('✅・download-conta', cargos['🖥️ CLIENTE CONTA']);
-    await criarCanalPrivado('✅・download-drip', cargos['🖥️ CLIENTE DRIP']);
+    await criarCanalPrivado('download-android', cargos['🖥️ CLIENTE APK MOD']);
+    await criarCanalPrivado('download-ios', cargos['🖥️ CLIENTE PAINEL IOS']);
+    await criarCanalPrivado('download-wifi', cargos['🖥️ CLIENTE HS WIFI']);
+    await criarCanalPrivado('download-holograma', cargos['🖥️ CLIENTE HOLOGRAMA']);
+    await criarCanalPrivado('download-conta', cargos['🖥️ CLIENTE CONTA']);
+    await criarCanalPrivado('download-drip', cargos['🖥️ CLIENTE DRIP']);
 
     // =====================
-    // 💬 CANAL GERAL
+    // 💬 CHAT
     // =====================
     await guild.channels.create({
       name: '💬・chat',
@@ -147,10 +154,7 @@ client.on(Events.InteractionCreate, async interaction => {
       ]
     });
 
-    await interaction.followUp({
-      content: '✅ Sistema completo criado!',
-      ephemeral: true
-    });
+    await message.reply('✅ Servidor criado com sucesso!');
   }
 });
 
