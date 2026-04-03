@@ -1,164 +1,175 @@
-const { 
-  Client, 
-  GatewayIntentBits, 
-  EmbedBuilder, 
-  ActionRowBuilder, 
-  StringSelectMenuBuilder,
+const {
+  Client,
+  GatewayIntentBits,
   ChannelType,
-  PermissionsBitField
+  PermissionsBitField,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+  Events
 } = require('discord.js');
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+  intents: [GatewayIntentBits.Guilds]
 });
 
-// 🔒 ANTI DUPLICAÇÃO
-const criandoTicket = new Map();
+const TOKEN = process.env.TOKEN;
 
-client.once('clientReady', () => {
-  console.log(`🔥 Bot online como ${client.user.tag}`);
+client.once(Events.ClientReady, () => {
+  console.log(`✅ Online como ${client.user.tag}`);
 });
 
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
 
-// ==========================
-// 📌 COMANDO PAINEL SUPORTE
-// ==========================
-client.on('messageCreate', async (message) => {
+  if (interaction.commandName === 'setup') {
+    await interaction.reply({ content: '🚀 Criando sistema completo...', ephemeral: true });
 
-  if (message.author.bot) return;
+    const guild = interaction.guild;
 
-  if (message.content === '!MGL') {
+    // =====================
+    // 🎭 CARGOS
+    // =====================
+    const cargos = {};
+
+    async function criarCargo(nome, cor) {
+      const cargo = await guild.roles.create({ name: nome, color: cor });
+      cargos[nome] = cargo;
+      return cargo;
+    }
+
+    // Staff
+    await criarCargo('👑 DONO', 'Gold');
+    await criarCargo('👑 SUB DONO', 'Yellow');
+    await criarCargo('GERENTE', 'Orange');
+    await criarCargo('ΔSTAFF', 'Red');
+    await criarCargo('[🛠️ SUPORTE 🛠️]', 'Blue');
+
+    // Clientes
+    await criarCargo('💠 MEMBRO', 'Grey');
+    await criarCargo('🖥️ CLIENTE APK MOD', 'Blue');
+    await criarCargo('🖥️ CLIENTE PAINEL IOS', 'Purple');
+    await criarCargo('🖥️ CLIENTE HS WIFI', 'Yellow');
+    await criarCargo('🖥️ CLIENTE HOLOGRAMA', 'Aqua');
+    await criarCargo('🖥️ CLIENTE CONTA', 'Green');
+    await criarCargo('🖥️ CLIENTE DRIP', 'DarkPurple');
+
+    const verificado = await criarCargo('✔️ VERIFICADO', 'Green');
+
+    // =====================
+    // 🔒 PERMISSÃO BASE
+    // =====================
+    await guild.roles.everyone.setPermissions([]);
+
+    // =====================
+    // ✅ CANAL VERIFICAÇÃO
+    // =====================
+    const canalVerificacao = await guild.channels.create({
+      name: '✅・verificação',
+      type: ChannelType.GuildText,
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone,
+          allow: [PermissionsBitField.Flags.ViewChannel]
+        }
+      ]
+    });
 
     const embed = new EmbedBuilder()
-      .setTitle('📋 PAINEL DE SUPORTE')
-      .setDescription(`
-🎫 **Atendimento**
+      .setTitle('✅ Verificação')
+      .setDescription('Clique no botão abaixo para liberar seu acesso ao servidor.\n\n🔒 Sistema de segurança ativo')
+      .setThumbnail('https://cdn-icons-png.flaticon.com/512/7398/7398228.png')
+      .setColor('#2b2d31');
 
-Clique abaixo para abrir um ticket.
+    const botao = new ButtonBuilder()
+      .setCustomId('verificar')
+      .setLabel('Verificar')
+      .setStyle(ButtonStyle.Success);
 
-⏳ Aguarde resposta da equipe.
-      `)
-      .setColor('#8A2BE2');
-
-    const select = new StringSelectMenuBuilder()
-      .setCustomId('ticket_suporte') // 🔥 único
-      .setPlaceholder('Abrir suporte')
-      .addOptions([
-        { label: '🛠 Suporte', value: 'suporte' }
-      ]);
-
-    const row = new ActionRowBuilder().addComponents(select);
-
-    message.channel.send({ embeds: [embed], components: [row] });
-  }
-
-});
-
-
-// ==========================
-// 🔥 INTERAÇÃO GLOBAL
-// ==========================
-client.on('interactionCreate', async (interaction) => {
-
-  if (!interaction.isStringSelectMenu()) return;
-
-  const userId = interaction.user.id;
-
-  // 🔒 trava clique
-  if (criandoTicket.has(userId)) {
-    return interaction.reply({
-      content: '⏳ Aguarde...',
-      ephemeral: true
+    await canalVerificacao.send({
+      embeds: [embed],
+      components: [new ActionRowBuilder().addComponents(botao)]
     });
-  }
 
-  criandoTicket.set(userId, true);
+    // =====================
+    // 📥 CATEGORIA DOWNLOAD
+    // =====================
+    const downloads = await guild.channels.create({
+      name: '📥・downloads',
+      type: ChannelType.GuildCategory
+    });
 
-  try {
-
-    // ==========================
-    // 🎟️ SUPORTE
-    // ==========================
-    if (interaction.customId === 'ticket_suporte') {
-
-      const existente = interaction.guild.channels.cache.find(c => 
-        c.name === `ticket-${userId}`
-      );
-
-      if (existente) {
-        criandoTicket.delete(userId);
-        return interaction.reply({
-          content: `❌ Já existe: ${existente}`,
-          ephemeral: true
-        });
-      }
-
-      const canal = await interaction.guild.channels.create({
-        name: `ticket-${interaction.user.username}`,
+    async function criarCanalPrivado(nome, cargo) {
+      await guild.channels.create({
+        name: nome,
         type: ChannelType.GuildText,
+        parent: downloads.id,
         permissionOverwrites: [
           {
-            id: interaction.guild.id,
+            id: guild.roles.everyone,
             deny: [PermissionsBitField.Flags.ViewChannel]
           },
           {
-            id: userId,
+            id: verificado.id,
+            deny: [PermissionsBitField.Flags.ViewChannel]
+          },
+          {
+            id: cargo.id,
             allow: [PermissionsBitField.Flags.ViewChannel]
           }
         ]
       });
-
-      const embed = new EmbedBuilder()
-        .setTitle('🎟️ TICKET DE SUPORTE')
-        .setDescription(`
-👤 ${interaction.user}
-
-Aguarde atendimento da equipe.
-        `)
-        .setColor('#8A2BE2');
-
-      await canal.send({ embeds: [embed] });
-
-      await interaction.reply({
-        content: `✅ Ticket criado: ${canal}`,
-        ephemeral: true
-      });
-
-      criandoTicket.delete(userId);
-      return; // 🔥 IMPORTANTE
     }
 
-    // ==========================
-    // 💰 REEMBOLSO (EXEMPLO)
-    // ==========================
-    if (interaction.customId === 'ticket_reembolso') {
+    await criarCanalPrivado('✅・download-android', cargos['🖥️ CLIENTE APK MOD']);
+    await criarCanalPrivado('✅・download-ios', cargos['🖥️ CLIENTE PAINEL IOS']);
+    await criarCanalPrivado('✅・download-wifi', cargos['🖥️ CLIENTE HS WIFI']);
+    await criarCanalPrivado('✅・download-holograma', cargos['🖥️ CLIENTE HOLOGRAMA']);
+    await criarCanalPrivado('✅・download-conta', cargos['🖥️ CLIENTE CONTA']);
+    await criarCanalPrivado('✅・download-drip', cargos['🖥️ CLIENTE DRIP']);
 
-      const canal = await interaction.guild.channels.create({
-        name: `reembolso-${interaction.user.username}`,
-        type: ChannelType.GuildText
-      });
+    // =====================
+    // 💬 CANAL GERAL
+    // =====================
+    await guild.channels.create({
+      name: '💬・chat',
+      type: ChannelType.GuildText,
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone,
+          deny: [PermissionsBitField.Flags.ViewChannel]
+        },
+        {
+          id: verificado.id,
+          allow: [PermissionsBitField.Flags.ViewChannel]
+        }
+      ]
+    });
 
-      await canal.send(`💰 Ticket de reembolso: ${interaction.user}`);
-
-      await interaction.reply({
-        content: `✅ Criado: ${canal}`,
-        ephemeral: true
-      });
-
-      criandoTicket.delete(userId);
-      return;
-    }
-
-  } catch (err) {
-    console.error(err);
+    await interaction.followUp({
+      content: '✅ Sistema completo criado!',
+      ephemeral: true
+    });
   }
-
-  criandoTicket.delete(userId);
-
 });
 
-client.login(process.env.TOKEN);
+// =====================
+// 🔘 BOTÃO VERIFICAÇÃO
+// =====================
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isButton()) return;
+
+  if (interaction.customId === 'verificar') {
+    const cargo = interaction.guild.roles.cache.find(r => r.name === '✔️ VERIFICADO');
+
+    await interaction.member.roles.add(cargo);
+
+    await interaction.reply({
+      content: '✅ Você foi verificado!',
+      ephemeral: true
+    });
+  }
+});
+
+client.login(TOKEN);
