@@ -23,8 +23,8 @@ client.once(Events.ClientReady, () => {
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === 'setup') {
-    await interaction.reply({ content: '🚀 Criando sistema completo...', ephemeral: true });
+  if (interaction.commandName === '!criar') {
+    await interaction.reply({ content: '🚀 obrigado por compra o produto...', ephemeral: true });
 
     const guild = interaction.guild;
 
