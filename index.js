@@ -3,177 +3,195 @@ const {
   GatewayIntentBits,
   ChannelType,
   PermissionsBitField,
+  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-  Events
-} = require('discord.js');
+  ButtonStyle
+} = require("discord.js");
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ]
 });
 
-const TOKEN = process.env.TOKEN;
-const PREFIX = '!';
+// ================= LOGIN =================
+client.login(process.env.TOKEN);
 
-client.once(Events.ClientReady, () => {
-  console.log(`✅ Online como ${client.user.tag}`);
-});
+// ================= EMBED ROXO =================
+const roxo = "#8000FF";
+const embed = (t, d) => new EmbedBuilder().setColor(roxo).setTitle(t).setDescription(d);
 
-// =========================
-// 💬 COMANDO !painel
-// =========================
-client.on(Events.MessageCreate, async message => {
-  if (!message.guild) return;
-  if (message.author.bot) return;
+// ================= BOAS-VINDAS =================
+client.on("guildMemberAdd", async (member) => {
+  const canal = member.guild.channels.cache.find(c => c.name === "boas-vindas");
+  const cargo = member.guild.roles.cache.find(r => r.name === "👨‍👨‍👦‍👦membros");
 
-  if (message.content === `${PREFIX}painel`) {
+  if (cargo) member.roles.add(cargo).catch(() => {});
 
-    await message.reply('🚀 Criando servidor completo...');
-
-    const guild = message.guild;
-
-    // =====================
-    // 🎭 CARGOS
-    // =====================
-    const cargos = {};
-
-    async function criarCargo(nome, cor) {
-      const cargo = await guild.roles.create({
-        name: nome,
-        color: cor
-      });
-      cargos[nome] = cargo;
-      return cargo;
-    }
-
-    await criarCargo('👑 DONO', 'Gold');
-    await criarCargo('👑 SUB DONO', 'Yellow');
-    await criarCargo('GERENTE', 'Orange');
-    await criarCargo('ΔSTAFF', 'Red');
-    await criarCargo('[🛠️ SUPORTE 🛠️]', 'Blue');
-
-    await criarCargo('💠 MEMBRO', 'Grey');
-    await criarCargo('🖥️ CLIENTE APK MOD', 'Blue');
-    await criarCargo('🖥️ CLIENTE PAINEL IOS', 'Purple');
-    await criarCargo('🖥️ CLIENTE HS WIFI', 'Yellow');
-    await criarCargo('🖥️ CLIENTE HOLOGRAMA', 'Aqua');
-    await criarCargo('🖥️ CLIENTE CONTA', 'Green');
-    await criarCargo('🖥️ CLIENTE DRIP', 'DarkPurple');
-
-    const verificado = await criarCargo('✔️ VERIFICADO', 'Green');
-
-    // =====================
-    // 🔒 BLOQUEAR SERVIDOR
-    // =====================
-    await guild.roles.everyone.setPermissions([]);
-
-    // =====================
-    // ✅ VERIFICAÇÃO
-    // =====================
-    const canalVerificacao = await guild.channels.create({
-      name: '✅・verificação',
-      type: ChannelType.GuildText,
-      permissionOverwrites: [
-        {
-          id: guild.roles.everyone,
-          allow: [PermissionsBitField.Flags.ViewChannel]
-        }
+  if (canal) {
+    canal.send({
+      content: `${member}`,
+      embeds: [
+        embed("Bem-vindo!", `${member} entrou no servidor, seja bem vindo(a)!`)
+        .setImage("https://assetsio.gnwcdn.com/roblox-blox-fruits-codes-list.jpg")
       ]
-    });
-
-    const embed = new EmbedBuilder()
-      .setTitle('✅ Verificação')
-      .setDescription('Clique no botão abaixo para liberar seu acesso ao servidor.\n\n🔒 Sistema de segurança ativo')
-      .setThumbnail('https://cdn-icons-png.flaticon.com/512/7398/7398228.png')
-      .setColor('#2b2d31');
-
-    const botao = new ButtonBuilder()
-      .setCustomId('verificar')
-      .setLabel('Verificar')
-      .setStyle(ButtonStyle.Success);
-
-    await canalVerificacao.send({
-      embeds: [embed],
-      components: [new ActionRowBuilder().addComponents(botao)]
-    });
-
-    // =====================
-    // 📥 DOWNLOADS
-    // =====================
-    const downloads = await guild.channels.create({
-      name: '📥・downloads',
-      type: ChannelType.GuildCategory
-    });
-
-    async function criarCanalPrivado(nome, cargo) {
-      await guild.channels.create({
-        name: nome,
-        type: ChannelType.GuildText,
-        parent: downloads.id,
-        permissionOverwrites: [
-          {
-            id: guild.roles.everyone,
-            deny: [PermissionsBitField.Flags.ViewChannel]
-          },
-          {
-            id: cargo.id,
-            allow: [PermissionsBitField.Flags.ViewChannel]
-          }
-        ]
-      });
-    }
-
-    await criarCanalPrivado('download-android', cargos['🖥️ CLIENTE APK MOD']);
-    await criarCanalPrivado('download-ios', cargos['🖥️ CLIENTE PAINEL IOS']);
-    await criarCanalPrivado('download-wifi', cargos['🖥️ CLIENTE HS WIFI']);
-    await criarCanalPrivado('download-holograma', cargos['🖥️ CLIENTE HOLOGRAMA']);
-    await criarCanalPrivado('download-conta', cargos['🖥️ CLIENTE CONTA']);
-    await criarCanalPrivado('download-drip', cargos['🖥️ CLIENTE DRIP']);
-
-    // =====================
-    // 💬 CHAT
-    // =====================
-    await guild.channels.create({
-      name: '💬・chat',
-      type: ChannelType.GuildText,
-      permissionOverwrites: [
-        {
-          id: guild.roles.everyone,
-          deny: [PermissionsBitField.Flags.ViewChannel]
-        },
-        {
-          id: verificado.id,
-          allow: [PermissionsBitField.Flags.ViewChannel]
-        }
-      ]
-    });
-
-    await message.reply('✅ Servidor criado com sucesso!');
-  }
-});
-
-// =====================
-// 🔘 BOTÃO VERIFICAÇÃO
-// =====================
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isButton()) return;
-
-  if (interaction.customId === 'verificar') {
-    const cargo = interaction.guild.roles.cache.find(r => r.name === '✔️ VERIFICADO');
-
-    await interaction.member.roles.add(cargo);
-
-    await interaction.reply({
-      content: '✅ Você foi verificado!',
-      ephemeral: true
     });
   }
 });
 
-client.login(TOKEN);
+// ================= COMANDOS =================
+client.on("messageCreate", async (msg) => {
+  if (!msg.guild) return;
+
+  // ===== CRIAR SERVIDOR =====
+  if (msg.content === "!criar") {
+    if (!msg.member.permissions.has(PermissionsBitField.Flags.Administrator))
+      return msg.reply("Sem permissão.");
+
+    const g = msg.guild;
+
+    // ===== CARGOS =====
+    const dono = await g.roles.create({ name: "𓆩♛𓆪dono", color: "#000000" });
+    const sub = await g.roles.create({ name: "🜲sub dono", color: "#aaaaaa" });
+    const staff = await g.roles.create({ name: "[⚒️Staff⚒️]", color: "#ff0000" });
+    const suporte = await g.roles.create({ name: "🛡️suporte", color: "#00008b" });
+    const crew = await g.roles.create({ name: "🏴‍☠️crew", color: "#00ffff" });
+    const membro = await g.roles.create({ name: "👨‍👨‍👦‍👦membros", color: "#0099ff" });
+
+    // ===== INFORMAÇÕES =====
+    const info = await g.channels.create({ name: "📌 INFORMAÇÕES", type: ChannelType.GuildCategory });
+
+    await g.channels.create({ name: "boas-vindas", type: ChannelType.GuildText, parent: info.id });
+    await g.channels.create({ name: "regras", type: ChannelType.GuildText, parent: info.id });
+    await g.channels.create({ name: "parceria", type: ChannelType.GuildText, parent: info.id });
+    await g.channels.create({ name: "chat", type: ChannelType.GuildText, parent: info.id });
+
+    // ===== BLOX FRUITS =====
+    const blox = await g.channels.create({ name: "🍍 BLOX FRUITS", type: ChannelType.GuildCategory });
+
+    const textos = [
+      "trade-frutas","trial-raça","leviathan","ilha-do-vulcao",
+      "evento-marinho","ilha-da-kitsune","servidor-privado","crews"
+    ];
+
+    for (let t of textos) {
+      await g.channels.create({ name: t, type: ChannelType.GuildText, parent: blox.id });
+    }
+
+    // ===== CALLS =====
+    const calls = await g.channels.create({ name: "🎤 CALLS", type: ChannelType.GuildCategory });
+
+    const voz = [
+      "call-1","call-2","call-trial-raça","call-leviathan",
+      "call-ilha-vulcao","call-kitsune","call-evento-marinho"
+    ];
+
+    for (let v of voz) {
+      await g.channels.create({ name: v, type: ChannelType.GuildVoice, parent: calls.id });
+    }
+
+    // ===== SUPORTE =====
+    const suporteCat = await g.channels.create({ name: "🎫 SUPORTE", type: ChannelType.GuildCategory });
+
+    const suporteCanal = await g.channels.create({
+      name: "suporte",
+      type: ChannelType.GuildText,
+      parent: suporteCat.id
+    });
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("abrir_ticket")
+        .setLabel("Abrir Suporte")
+        .setStyle(ButtonStyle.Primary)
+    );
+
+    await suporteCanal.send({
+      embeds: [
+        embed(
+          "Central de Atendimento | Gbz bloxer",
+`Precisa de ajuda?
+
+Abra um ticket e aguarde um membro da nossa equipe assumir seu atendimento.
+
+Todo suporte é privado e seguro.
+
+A equipe responderá o mais rápido possível 🚀`
+        )
+      ],
+      components: [row]
+    });
+
+    msg.reply("✅ Servidor criado COMPLETO!");
+  }
+
+  // ===== LOCK =====
+  if (msg.content === "+lock") {
+    msg.channel.permissionOverwrites.edit(msg.guild.roles.everyone, { SendMessages: false });
+    msg.reply("🔒 Canal bloqueado");
+  }
+
+  // ===== UNLOCK =====
+  if (msg.content === "+unlock") {
+    msg.channel.permissionOverwrites.edit(msg.guild.roles.everyone, { SendMessages: true });
+    msg.reply("🔓 Canal desbloqueado");
+  }
+});
+
+// ================= TICKETS =================
+client.on("interactionCreate", async (i) => {
+  if (!i.isButton()) return;
+
+  // ===== ABRIR =====
+  if (i.customId === "abrir_ticket") {
+
+    const canal = await i.guild.channels.create({
+      name: `ticket-${i.user.username}`,
+      type: ChannelType.GuildText,
+      permissionOverwrites: [
+        { id: i.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+        { id: i.user.id, allow: [PermissionsBitField.Flags.ViewChannel] }
+      ]
+    });
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("assumir").setLabel("Assumir").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("fechar").setLabel("Fechar").setStyle(ButtonStyle.Danger)
+    );
+
+    await canal.send({
+      embeds: [
+        embed(
+          "SUPORTE Gbz bloxer",
+`Olá ${i.user}
+
+Descreva seu problema com detalhes.
+
+⏳ Aguarde atendimento.
+
+⚠️ Não marque staff ou dono.`
+        )
+      ],
+      components: [row]
+    });
+
+    i.reply({ content: `Ticket criado: ${canal}`, ephemeral: true });
+  }
+
+  // ===== FECHAR =====
+  if (i.customId === "fechar") {
+    if (!i.member.permissions.has(PermissionsBitField.Flags.ManageChannels))
+      return i.reply({ content: "Sem permissão", ephemeral: true });
+
+    i.channel.delete();
+  }
+
+  // ===== ASSUMIR =====
+  if (i.customId === "assumir") {
+    i.reply("✅ Ticket assumido");
+  }
+});
