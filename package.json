@@ -1,17 +1,11 @@
 {
-  "name": "bot-servidor-profissional",
+  "name": "GBZ-BLOXER",
   "version": "1.0.0",
-  "description": "Bot Discord com verificação, cargos e canais privados",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "author": "Você",
-  "license": "MIT",
   "dependencies": {
     "discord.js": "^14.14.1"
-  },
-  "engines": {
-    "node": ">=18"
   }
 }
